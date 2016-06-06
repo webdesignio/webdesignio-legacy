@@ -2,4 +2,6 @@
 
 const express = require('express')
 
-module.exports = express()
+const app = module.exports = express()
+
+app.use(require('./services/deployment'))

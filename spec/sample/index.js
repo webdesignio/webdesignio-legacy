@@ -5,7 +5,7 @@ const { join } = require('path')
 
 const include = path => createReadStream(join(__dirname, path))
 
-module.exports = {
+module.exports = exports = {
   'pages/home': include('pages/home.html'),
   'pages/about': include('pages/about.html'),
   'objects/blog-posts/new': include('objects/blog-posts/new.html'),

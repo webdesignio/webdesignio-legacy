@@ -4,12 +4,23 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "ava spec/*.js **/*_test.js"
+  },
+  "standard": {
+    "parser": "babel-eslint"
   },
   "keywords": [],
   "author": "Dominik Burgdörfer <db@domachine.de>",
   "license": "MIT",
   "devDependencies": {
-    "standard": "^7.1.2"
+    "ava": "^0.15.2",
+    "babel-eslint": "^6.0.4",
+    "request-promise": "^3.0.0",
+    "shortid": "^2.2.6",
+    "standard": "^7.1.2",
+    "test-listen": "^1.0.0"
+  },
+  "dependencies": {
+    "express": "^4.13.4"
   }
 }

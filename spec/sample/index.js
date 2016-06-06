@@ -3,7 +3,7 @@
 const { readFileSync } = require('fs')
 const { join } = require('path')
 
-const include = readFileSync(join(__dirname, path), 'utf-8')
+const include = path => readFileSync(join(__dirname, path), 'utf-8')
 
 module.exports = {
   pages: {
@@ -11,7 +11,7 @@ module.exports = {
     about: include('pages/about.html')
   },
   objects: {
-    "blog-posts": {
+    'blog-posts': {
       new: include('objects/blog-posts/new.html'),
       edit: include('objects/blog-posts/edit.html')
     }

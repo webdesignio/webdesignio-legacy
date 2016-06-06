@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [[ $NODE_ENV == production ]]; then
+  node server.js
+else
+  trap 'kill $(jobs -p)' EXIT
+  mongod --dbpath data &
+  ava '**/*_test.js' --watch &
+  node-dev server.js
+fi

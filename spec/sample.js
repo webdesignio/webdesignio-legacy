@@ -17,4 +17,5 @@ test('the sample is accepted with 200', async t => {
     formData: sample
   })
   t.is(res.statusCode, 200)
+  srv.stop()
 })

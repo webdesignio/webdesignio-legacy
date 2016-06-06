@@ -1,0 +1,11 @@
+'use strict'
+
+const { log } = require('util')
+const http = require('http')
+
+const app = require('.')
+
+const server = http.createServer(app)
+server.listen(process.env.PORT || 3000, () => {
+  log(`Listening on port ${server.address().port}`)
+})

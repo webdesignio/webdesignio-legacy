@@ -5,6 +5,7 @@ import listen from 'test-listen'
 import mongoose from 'mongoose'
 import mockgoose from 'mockgoose'
 import Bluebird from 'bluebird'
+import Grid from 'gridfs-stream'
 
 import app from '..'
 import sample from './sample/index.js'
@@ -16,7 +17,7 @@ test.before(async () => {
 })
 
 test('the sample is accepted with 200', async t => {
-  t.plan(1)
+  t.plan(2)
   const srv = http.createServer(app)
   const url = await listen(srv)
   const id = 'foobar'
@@ -25,4 +26,12 @@ test('the sample is accepted with 200', async t => {
     formData: sample
   })
   t.deepEqual(res, JSON.stringify({ ok: true }))
+  const gfs = Grid(mongoose.connection.db, mongoose.mongo)
+  const exists = Bluebird.promisify(gfs.exist, { context: gfs })
+  const values = await Promise.all(
+    Object.keys(sample)
+      .map(filename => exists({ filename, 'metadata.website': id }))
+  )
+  const success = values.reduce((value, v) => value && v)
+  t.is(true, success)
 })

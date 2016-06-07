@@ -8,7 +8,7 @@ module.exports = parseFiles
 
 function parseFiles (req) {
   const busboy = new Busboy({ headers: req.headers })
-  const validTypes = ['pages', 'objects', 'components']
+  const validTypes = ['pages', 'objects', 'components', 'client']
   return Observable.create(observer => {
     busboy.on('file', (fieldname, file, filename) => {
       const type = fieldname.split('/')[0]

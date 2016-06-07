@@ -1,5 +1,7 @@
 'use strict'
 
+const fs = require('fs')
+const crypto = require('crypto')
 const mongoose = require('mongoose')
 const Grid = require('gridfs-stream')
 const { Observable } = require('rx')
@@ -19,7 +21,31 @@ function diff (website, incomingFile$) {
         .map(file =>
           file == null
             ? { type: 'CREATE', filename, path }
-            : { type: 'UPDATE', filename, path, _id: file._id }
+            : {
+              type: 'UPDATE',
+              filename,
+              path,
+              _id: file._id,
+              remoteMd5: file.md5
+            }
+        )
+        .flatMap(change => {
+          if (change.type === 'CREATE') return Observable.return(change)
+          return Observable.create(observer => {
+            const md5sum = crypto.createHash('md5')
+            const s = fs.createReadStream(change.path)
+            s.on('data', d => md5sum.update(d))
+            s.on('end', () => {
+              observer.onNext(Object.assign({}, change, {
+                localMd5: md5sum.digest('hex')
+              }))
+              observer.onCompleted()
+            })
+          })
+        })
+        .filter(change =>
+          change.type === 'CREATE' ||
+            change.localMd5 !== change.remoteMd5
         )
     })
     .map(change => Object.assign({}, change, {

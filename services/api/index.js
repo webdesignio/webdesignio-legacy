@@ -16,10 +16,18 @@ api.post('/websites/:website/deploy', (req, res, next) => {
     diff(req.params.website)
   )
   transform(incomingFile$)
-    .reduce(() => {}, {})
+    .reduce(
+      (stats, change) => {
+        const key = change.type.toLowerCase()
+        return Object.assign({}, stats, {
+          [key]: stats[key] + 1
+        })
+      },
+      { create: 0, update: 0, remove: 0 }
+    )
     .subscribe(
-      () => {
-        res.send({ ok: true })
+      stats => {
+        res.send(stats)
       },
       next
     )

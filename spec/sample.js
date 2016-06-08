@@ -25,7 +25,11 @@ test('the sample is accepted with 200', async t => {
     method: 'POST',
     formData: sample
   })
-  t.deepEqual(res, JSON.stringify({ ok: true }))
+  t.deepEqual(res, JSON.stringify({
+    create: 6,
+    update: 0,
+    remove: 0
+  }))
   const gfs = Grid(mongoose.connection.db, mongoose.mongo)
   const exists = Bluebird.promisify(gfs.exist, { context: gfs })
   const values = await Promise.all(

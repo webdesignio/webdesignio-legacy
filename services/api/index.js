@@ -25,3 +25,13 @@ api.post('/websites/:website/deploy', (req, res, next) => {
     )
   incomingFile$.connect()
 })
+
+api.use((err, req, res, next) => {
+  if (err.statusCode) {
+    res
+      .status(err.statusCode)
+      .send({ message: err.message })
+  } else {
+    next(err)
+  }
+})

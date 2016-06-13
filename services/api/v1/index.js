@@ -3,9 +3,9 @@
 const express = require('express')
 const compose = require('lodash/fp/compose')
 
-const parseFiles = require('../parse_files')
-const diff = require('../diff')
-const patch = require('../patch')
+const parseFiles = require('../../parse_files')
+const diff = require('../../diff')
+const patch = require('../../patch')
 
 const api = module.exports = express()
 

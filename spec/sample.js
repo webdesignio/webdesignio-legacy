@@ -21,7 +21,7 @@ test('the sample is accepted with 200', async t => {
   const srv = http.createServer(app)
   const url = await listen(srv)
   const id = 'foobar'
-  const res = await request(`${url}/websites/${id}/deploy`, {
+  const res = await request(`${url}/api/v1/websites/${id}/deploy`, {
     method: 'POST',
     formData: sample
   })

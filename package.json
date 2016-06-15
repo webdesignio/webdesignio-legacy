@@ -10,6 +10,12 @@
   "standard": {
     "parser": "babel-eslint"
   },
+  "browser": "lib/browser.js",
+  "browserify": {
+    "transform": [
+      "babelify"
+    ]
+  },
   "keywords": [],
   "author": "Dominik Burgdörfer <db@domachine.de>",
   "license": "MIT",

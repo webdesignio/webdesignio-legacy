@@ -9,6 +9,7 @@ const cheerio = require('cheerio')
 
 const _Object = require('../lib/object_model')
 const Page = require('../lib/page_model')
+const { findPage, findObject } = require('../lib/webdesignio')
 
 const service = module.exports = express()
 
@@ -28,15 +29,15 @@ service.use((req, res, next) => {
     }))
   }
 
-  req.findObject = o => {
-    const findObject = Observable.fromNodeCallback(_Object.findOne, _Object)
-    return findObject(Object.assign({}, o, { website: req.vhost }))
-  }
+  req.findObject = ({ _id, type }) =>
+    Observable.fromPromise(
+      findObject(_id, { website: req.vhost, type })
+    )
 
-  req.findPage = o => {
-    const findPage = Observable.fromNodeCallback(Page.findOne, Page)
-    return findPage(Object.assign({}, o, { website: req.vhost }))
-  }
+  req.findPage = ({ _id }) =>
+    Observable.fromPromise(
+      findPage(_id, { website: req.vhost })
+    )
 
   res.renderTemplate = ({ filename }) => {
     const template = gfs.createReadStream({
@@ -84,25 +85,21 @@ service.get('/:type/new', (req, res, next) => {
 service.get('/:type/:object', (req, res, next) => {
   if (!req.vhost) return next()
   const filename = `objects/${req.params.type}`
-  req.findObject({
-    type: req.params.type,
-    _id: req.params.object,
-    website: req.vhost
-  })
-  .flatMap(object =>
-    !object
-      ? Observable.throw(error(404))
-      : req.fileExists({ filename, 'metadata.website': req.vhost })
-        .flatMap(exists =>
-          exists
-            ? Observable.return(object)
-            : Observable.throw(error(404))
-        )
-  )
-  .subscribe(
-    () => res.renderTemplate({ filename }),
-    next
-  )
+  req.findObject({ type: req.params.type, _id: req.params.object })
+    .flatMap(object =>
+      !object
+        ? Observable.throw(error(404))
+        : req.fileExists({ filename, 'metadata.website': req.vhost })
+          .flatMap(exists =>
+            exists
+              ? Observable.return(object)
+              : Observable.throw(error(404))
+          )
+    )
+    .subscribe(
+      () => res.renderTemplate({ filename }),
+      next
+    )
 })
 
 service.get('/:page', (req, res, next) => {

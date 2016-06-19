@@ -3,7 +3,7 @@
 const express = require('express')
 const compose = require('lodash/fp/compose')
 
-const parseFiles = require('../../parse_files')
+const parseFiles = require('../../../lib/parse_files')
 const diff = require('../../diff')
 const patch = require('../../patch')
 

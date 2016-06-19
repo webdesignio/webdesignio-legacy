@@ -7,7 +7,7 @@ import mockgoose from 'mockgoose'
 import Bluebird from 'bluebird'
 import Grid from 'gridfs-stream'
 
-import app from '..'
+import app from '../app'
 import sample from './sample/index.js'
 
 test.before(async () => {

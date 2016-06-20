@@ -52,7 +52,7 @@ service.get('/static/client.js', (req, res, next) => {
 service.get('/:type/new', (req, res, next) => {
   if (!req.vhost) return next()
   const filename = `objects/${req.params.type}`
-  fileExists({ filename })
+  fileExists({ filename, website: req.vhost })
     .then(ex => ex ? new _Object({ data: {} }) : Promise.reject(error(404)))
     .then(({ data }) => res.renderTemplate(data, { filename }), next)
 })

@@ -72,12 +72,13 @@ service.get('/:type/:object', (req, res, next) => {
     .then(object => res.renderTemplate(object, { filename }), next)
 })
 
-service.get('/:page', (req, res, next) => {
+service.get(/\/([^/]*)/, (req, res, next) => {
   if (!req.vhost) return next()
-  const { vhost: website, params: { page: id } } = req
+  const { vhost: website, params } = req
+  const id = params[0] || 'index'
   const filename = `pages/${id}`
   findPage(id, { website })
-    .then(page => page || new Page({}))
+    .then(page => page == null ? new Page({ _id: id, data: {} }) : page)
     .then(page =>
       fileExists({ filename, 'metadata.website': website })
         .then(ex => ex ? page : Promise.reject(error(404)))

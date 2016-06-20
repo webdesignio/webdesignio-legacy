@@ -3,15 +3,18 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const Grid = require('gridfs-stream')
-const { Observable } = require('rx')
 const error = require('http-errors')
-const cheerio = require('cheerio')
+const Bluebird = require('bluebird')
+const memoize = require('lodash/fp/memoize')
 
 const _Object = require('../lib/object_model')
 const Page = require('../lib/page_model')
-const { findPage, findObject } = require('../lib/webdesignio')
+const { findPage, findObject, renderTemplate } = require('../lib/webdesignio')
 
 const service = module.exports = express()
+const gfs = memoize(() => Grid(mongoose.connection.db, mongoose.mongo))
+const fileExists = (... args) =>
+  Bluebird.fromCallback(next => gfs().exist(... args, next))
 
 service.use((req, res, next) => {
   const host = hostnameof(req)
@@ -19,28 +22,10 @@ service.use((req, res, next) => {
   if (!host.split('.').length === 3) return next()
   const vhost = host.split('.')[0]
   if (vhost === 'www') return next()
-  const gfs = req.gfs = Grid(mongoose.connection.db, mongoose.mongo)
   req.vhost = vhost
 
-  req.fileExists = o => {
-    const fileExists = Observable.fromNodeCallback(gfs.exist, gfs)
-    return fileExists(Object.assign({}, o, {
-      'metadata.website': req.vhost
-    }))
-  }
-
-  req.findObject = ({ _id, type }) =>
-    Observable.fromPromise(
-      findObject(_id, { website: req.vhost, type })
-    )
-
-  req.findPage = ({ _id }) =>
-    Observable.fromPromise(
-      findPage(_id, { website: req.vhost })
-    )
-
-  res.renderTemplate = ({ filename }) => {
-    const template = gfs.createReadStream({
+  res.renderTemplate = (data, { filename }) => {
+    const template = gfs().createReadStream({
       filename,
       'metadata.website': req.vhost
     })
@@ -48,11 +33,8 @@ service.use((req, res, next) => {
     template
       .on('data', d => { buffer += d })
       .on('end', () => {
-        const $ = cheerio.load(buffer)
-        $('script[data-cms]')
-          .replaceWith($('<script src="/static/client.js"></script>'))
         res.setHeader('Content-Type', 'text/html')
-        res.send($.html())
+        res.send(renderTemplate(data, buffer))
       })
   }
 
@@ -70,53 +52,36 @@ service.get('/static/client.js', (req, res, next) => {
 service.get('/:type/new', (req, res, next) => {
   if (!req.vhost) return next()
   const filename = `objects/${req.params.type}`
-  req.fileExists({ filename })
-    .flatMap(exists =>
-      exists
-        ? Observable.return(new _Object({}))
-        : Observable.throw(error(404))
-    )
-    .subscribe(
-      () => res.renderTemplate({ filename }),
-      next
-    )
+  fileExists({ filename })
+    .then(ex => ex ? new _Object({ data: {} }) : Promise.reject(error(404)))
+    .then(({ data }) => res.renderTemplate(data, { filename }), next)
 })
 
 service.get('/:type/:object', (req, res, next) => {
   if (!req.vhost) return next()
+  const { vhost: website, params: { type, object: id } } = req
   const filename = `objects/${req.params.type}`
-  req.findObject({ type: req.params.type, _id: req.params.object })
-    .flatMap(object =>
+  findObject(id, { type, website })
+    .then(object =>
       !object
-        ? Observable.throw(error(404))
-        : req.fileExists({ filename, 'metadata.website': req.vhost })
-          .flatMap(exists =>
-            exists
-              ? Observable.return(object)
-              : Observable.throw(error(404))
-          )
+        ? Promise.reject(error(404))
+        : fileExists({ filename, 'metadata.website': website })
+          .then(ex => ex ? object : Promise.reject(error(404)))
     )
-    .subscribe(
-      () => res.renderTemplate({ filename }),
-      next
-    )
+    .then(object => res.renderTemplate(object, { filename }), next)
 })
 
 service.get('/:page', (req, res, next) => {
   if (!req.vhost) return next()
-  const filename = `pages/${req.params.page}`
-  req.findPage({ _id: req.params.page, website: req.vhost })
-    .map(page => page || new Page({}))
-    .flatMap(page =>
-      req.fileExists({ filename })
-        .flatMap(e =>
-          e ? Observable.return(page) : Observable.throw(error(404))
-        )
+  const { vhost: website, params: { page: id } } = req
+  const filename = `pages/${id}`
+  findPage(id, { website })
+    .then(page => page || new Page({}))
+    .then(page =>
+      fileExists({ filename, 'metadata.website': website })
+        .then(ex => ex ? page : Promise.reject(error(404)))
     )
-    .subscribe(
-      () => res.renderTemplate({ filename }),
-      next
-    )
+    .then(page => res.renderTemplate(page, { filename }), next)
 })
 
 function hostnameof (req) {

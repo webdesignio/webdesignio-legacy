@@ -42,6 +42,7 @@ service.use((req, res, next) => {
 })
 
 service.get('/static/client.js', (req, res, next) => {
+  if (!req.vhost) return next()
   const gfs = Grid(mongoose.connection.db, mongoose.mongo)
   const filename = 'client'
   res.setHeader('Content-Type', 'text/html')
